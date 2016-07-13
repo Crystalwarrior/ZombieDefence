@@ -3,18 +3,23 @@ HC = require 'lib/hardoncollider'
 require 'zombie'
 
 local player = nil
-local zombies = {}
+local zombie_list = nil
 local projectiles = {}
 
 function startGame()
 	player = HC.circle(love.graphics.getWidth()/2, love.graphics.getHeight()/2, 16)
 	player.health = 100
 	player.speed = 75
+	zombie_list = init_zombie_list()
 end
 
 function endGame()
 	HC.remove(player)
 	player = nil
+end
+
+function get_player()
+	return player
 end
 
 function love.mousepressed(x, y, button)
@@ -36,13 +41,7 @@ function love.mousepressed(x, y, button)
 	end
 
 	if button == 2 then
-		local z = HC.circle(x, y, 16)
-		z.health = 10
-		z.speed = 50
-		z.targ_x = x
-		z.targ_y = y
-		z.color = {0, 125, 0, 255}
-		table.insert(zombies, z)
+		create_zombie(zombie_list, x, y, 10, 50, {0, 125, 0, 255})
 	end
 end
 
@@ -63,7 +62,7 @@ function processGame(dt)
 		end
 		player:move(pdx,pdy)
 	end
-	process_zombies(zombies, dt)
+	process_zombies(zombie_list, dt)
 	for i,p in ipairs(projectiles) do
 		local p_x,p_y = p:center()
 		local dist = math.dist(p.ox, p.oy, p_x, p_y)
@@ -77,10 +76,10 @@ end
 function check_collisions()
 	for i,p in ipairs(projectiles) do
 		local collisions = HC.collisions(p)
-		for u,z in ipairs(zombies) do
+		for u,z in ipairs(zombie_list) do
 			for other, dif in pairs(collisions) do
 				if z == other then
-					zombie_hurt(z, zombies, u, p.damage)
+					zombie_hurt(z, zombie_list, u, p.damage)
 					HC.remove(p) -- remove bullet from HC
 					table.remove(projectiles, i) -- remove bullet from actor list
 				end
@@ -88,7 +87,7 @@ function check_collisions()
 		end
 	end
 
-	for i,z in ipairs(zombies) do
+	for i,z in ipairs(zombie_list) do
 		local candidates = HC.neighbors(z)
 		for other in pairs(candidates) do
 			local collides, dx, dy = z:collidesWith(other)
@@ -126,7 +125,7 @@ function drawGame()
 		love.graphics.line(x, y, x - p.trailx, y - p.traily)
 	end
 
-	draw_zombies(zombies)
+	draw_zombies(zombie_list)
 
 	-- for i,e in ipairs(particles) do
 	-- 	love.graphics.setColor(e.color[1], e.color[2], e.color[3], e.color[4])

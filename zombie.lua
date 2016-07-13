@@ -1,5 +1,21 @@
-function process_zombies(zombies, dt)
-	for i,z in ipairs(zombies) do
+function init_zombie_list()
+	return {}
+end
+
+function create_zombie(zombie_list, x, y, hp, speed, color)
+	local z = HC.circle(x, y, 16)
+	z.health = hp
+	z.speed = speed
+	z.targ_x = x
+	z.targ_y = y
+	z.color = color
+	table.insert(zombie_list, z)
+	return z
+end
+
+function process_zombies(zombie_list, dt)
+	for i,z in ipairs(zombie_list) do
+		local player = get_player()
 		if player ~= nil then
 			local player_x,player_y = player:center()
 			z.targ_x = player_x
@@ -20,17 +36,17 @@ function process_zombies(zombies, dt)
 	end
 end
 
-function zombie_hurt(z, zombies, i, dmg)
+function zombie_hurt(z, zombie_list, i, dmg)
 	z.health = z.health - dmg
 	z.color = {125, 125, 0, 255}
 	if z.health <= 0 then
 		HC.remove(z)
-		table.remove(zombies, i)
+		table.remove(zombie_list, i)
 	end
 end
 
-function draw_zombies(zombies)
-	for i,z in ipairs(zombies) do
+function draw_zombies(zombie_list)
+	for i,z in ipairs(zombie_list) do
 		draw_zombie(z)
 	end
 end
