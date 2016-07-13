@@ -3,14 +3,14 @@ HC = require 'lib/hardoncollider'
 require 'zombie'
 
 local player = nil
-local zombie_list = nil
+local zombie_director = nil
 local projectiles = {}
 
 function startGame()
 	player = HC.circle(love.graphics.getWidth()/2, love.graphics.getHeight()/2, 16)
 	player.health = 100
 	player.speed = 75
-	zombie_list = init_zombie_list()
+	zombie_director = init_zombie_director()
 end
 
 function endGame()
@@ -40,9 +40,9 @@ function love.mousepressed(x, y, button)
 		table.insert(projectiles, p)
 	end
 
-	if button == 2 then
-		create_zombie(zombie_list, x, y, 10, 50, {0, 125, 0, 255})
-	end
+	-- if button == 2 then
+	-- 	create_zombie(zombie_director, x, y, 10, 50, {0, 125, 0, 255})
+	-- end
 end
 
 function processGame(dt)
@@ -62,7 +62,7 @@ function processGame(dt)
 		end
 		player:move(pdx,pdy)
 	end
-	process_zombies(zombie_list, dt)
+	process_zombies(zombie_director, dt)
 	for i,p in ipairs(projectiles) do
 		local p_x,p_y = p:center()
 		local dist = math.dist(p.ox, p.oy, p_x, p_y)
@@ -76,10 +76,10 @@ end
 function check_collisions()
 	for i,p in ipairs(projectiles) do
 		local collisions = HC.collisions(p)
-		for u,z in ipairs(zombie_list) do
+		for u,z in ipairs(zombie_director) do
 			for other, dif in pairs(collisions) do
 				if z == other then
-					zombie_hurt(z, zombie_list, u, p.damage)
+					zombie_hurt(z, zombie_director, u, p.damage)
 					HC.remove(p) -- remove bullet from HC
 					table.remove(projectiles, i) -- remove bullet from actor list
 				end
@@ -87,7 +87,7 @@ function check_collisions()
 		end
 	end
 
-	for i,z in ipairs(zombie_list) do
+	for i,z in ipairs(zombie_director) do
 		local candidates = HC.neighbors(z)
 		for other in pairs(candidates) do
 			local collides, dx, dy = z:collidesWith(other)
@@ -125,7 +125,7 @@ function drawGame()
 		love.graphics.line(x, y, x - p.trailx, y - p.traily)
 	end
 
-	draw_zombies(zombie_list)
+	draw_zombies(zombie_director)
 
 	-- for i,e in ipairs(particles) do
 	-- 	love.graphics.setColor(e.color[1], e.color[2], e.color[3], e.color[4])
@@ -133,9 +133,11 @@ function drawGame()
 	-- end
 
 	--HUD
+	love.graphics.setColor(0, 200, 0, 255)
+	love.graphics.setNewFont(24)
 	if player ~= nil then
-		love.graphics.setColor(0, 200, 0, 255)
-		love.graphics.setNewFont(24)
-		love.graphics.print("HP: " .. player.health, love.graphics.getWidth()/2 -48, 0)
+		love.graphics.print("HP: " .. player.health, 0, 0)
 	end
+	love.graphics.print("TIMER: " .. math.floor(zombie_director.timer), love.graphics.getWidth()/2-58, 0)
+	love.graphics.print("WAVE: " .. zombie_director.wave, love.graphics.getWidth()-128, 0)
 end

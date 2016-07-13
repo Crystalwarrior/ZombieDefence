@@ -1,20 +1,65 @@
-function init_zombie_list()
-	return {}
+function init_zombie_director()
+	local z = {}
+	z.timer = 10
+	z.wave = 0
+	z.wave_period = 30 --A single wave lasts 30 seconds
+	z.grace_period = 15 --Time until next wave
+	z.zombie_per_second = 2 --Spawn a zombie every second
+	z.spawn_timer = 0 --timer itself
+	z.state = 0 --What state of director are we in? 0 = Grace Period, 1 = Active Wave
+	return z
 end
 
-function create_zombie(zombie_list, x, y, hp, speed, color)
+function create_zombie(zombie_director, x, y, hp, speed, color)
+	if color == nil then
+		color = {0, 125, 0, 255}
+	end
 	local z = HC.circle(x, y, 16)
 	z.health = hp
 	z.speed = speed
 	z.targ_x = x
 	z.targ_y = y
 	z.color = color
-	table.insert(zombie_list, z)
+	table.insert(zombie_director, z)
 	return z
 end
 
-function process_zombies(zombie_list, dt)
-	for i,z in ipairs(zombie_list) do
+function process_zombies(zombie_director, dt)
+	zombie_director.timer = zombie_director.timer - dt
+	if zombie_director.timer <= 0 then
+		if zombie_director.state == 0 then
+			zombie_director.wave = zombie_director.wave + 1 --Increase wave
+			zombie_director.zombie_per_second = math.max(zombie_director.zombie_per_second * 0.8, 0.3) --Make it harder
+			zombie_director.state = 1
+			zombie_director.timer = zombie_director.wave_period
+		elseif zombie_director.state == 1 then
+			zombie_director.state = 0
+			zombie_director.spawn_timer = 0
+			zombie_director.timer = zombie_director.grace_period
+		end
+	end
+
+	if zombie_director.state == 1 then
+		zombie_director.spawn_timer = zombie_director.spawn_timer + dt
+		if zombie_director.spawn_timer > zombie_director.zombie_per_second then
+			zombie_director.spawn_timer = 0
+			local player = get_player()
+			if player ~= nil then
+				local player_x,player_y = player:center()
+				local angle = math.pi * 2 * love.math.random()
+				local x = player_x + 300 * math.cos(angle)
+				local y = player_y + 300 * math.sin(angle)
+
+				local wave = zombie_director.wave
+				local hp = 5 * math.clamp(wave/5, 1, 10)
+				local speed = 50 * math.clamp(wave/5, 1, 10)
+				create_zombie(zombie_director, x, y, hp, speed)
+			end
+		end
+	end
+
+	--Zombie AI
+	for i,z in ipairs(zombie_director) do
 		local player = get_player()
 		if player ~= nil then
 			local player_x,player_y = player:center()
@@ -36,17 +81,20 @@ function process_zombies(zombie_list, dt)
 	end
 end
 
-function zombie_hurt(z, zombie_list, i, dmg)
+function zombie_hurt(z, zombie_director, i, dmg)
 	z.health = z.health - dmg
-	z.color = {125, 125, 0, 255}
 	if z.health <= 0 then
-		HC.remove(z)
-		table.remove(zombie_list, i)
+		zombie_remove(z, zombie_director, i)
 	end
 end
 
-function draw_zombies(zombie_list)
-	for i,z in ipairs(zombie_list) do
+function zombie_remove(z, zombie_director, i)
+	HC.remove(z)
+	table.remove(zombie_director, i)
+end
+
+function draw_zombies(zombie_director)
+	for i,z in ipairs(zombie_director) do
 		draw_zombie(z)
 	end
 end
