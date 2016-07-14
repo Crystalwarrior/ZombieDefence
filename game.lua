@@ -1,21 +1,23 @@
 --Initiate collider
-HC = require 'lib/hardoncollider'
+HC = require 'lib/HardonCollider'
+require 'player'
 require 'zombie'
 
 local player = nil
 local zombie_director = nil
 local projectiles = {}
 
+local gamestate = 0 --0 = not running, 1 = yay running
+
 function startGame()
-	player = HC.circle(love.graphics.getWidth()/2, love.graphics.getHeight()/2, 16)
-	player.health = 100
-	player.speed = 75
+	player = new_player()
 	zombie_director = init_zombie_director()
+	gamestate = 1
 end
 
 function endGame()
-	HC.remove(player)
-	player = nil
+	player = remove_player(player)
+	gamestate = 0
 end
 
 function get_player()
@@ -23,52 +25,94 @@ function get_player()
 end
 
 function love.mousepressed(x, y, button)
-	print(x, y, button)
-	if button == 1 then
-		if player == nil then return end
-
-		local player_x,player_y = player:center()
-
-		local p = HC.point(player_x, player_y)
-		p.damage = 5
-		p.angle = math.atan2((y - player_y), (x - player_x))
-		p.dx = 300 * math.cos(p.angle)
-		p.dy = 300 * math.sin(p.angle)
-		p.ox = player_x
-		p.oy = player_y
-
-		table.insert(projectiles, p)
+	if player ~= nil then
+		player_mousetrigger(player, button, 1, x, y)
 	end
+end
 
-	-- if button == 2 then
-	-- 	create_zombie(zombie_director, x, y, 10, 50, {0, 125, 0, 255})
-	-- end
+function love.mousereleased(x, y, button)
+	if player ~= nil then
+		player_mousetrigger(player, button, 0, x, y)
+	end
+end
+
+function love.wheelmoved(x, y)
+	if y > 0 then
+		player.currgun = player.currgun + 1
+		if player.currgun > #player.weapons then
+			player.currgun = 1
+		end
+	elseif y < 0 then
+		player.currgun = player.currgun -1
+		if player.currgun < 1 then
+			player.currgun = #player.weapons
+		end
+	end
+end
+
+function love.keypressed(key)
+	if player ~= nil then
+		player_keytrigger(player, key, 1)
+	end
+end
+
+function love.keyreleased(key)
+	if player ~= nil then
+		player_keytrigger(player, key, 0)
+	end
+end
+
+function init_projectile(ox, oy, dmg, vel, penetration)
+	local p = HC.point(ox, oy)
+	p.damage = dmg
+	p.velocity = vel
+	p.angle = 0
+	p.dx = 0 --direction x
+	p.dy = 0 --direction y
+	p.ox = ox
+	p.oy = oy
+	p.trailx = 0
+	p.traily = 0
+	p.penetration = penetration or 0
+
+	return p
+end
+
+function shoot_projectile(p, angle)
+	table.insert(projectiles, p)
+	p.angle = angle
+	p.dx = p.velocity * math.cos(p.angle)
+	p.dy = p.velocity * math.sin(p.angle)
+end
+
+function projectile_hit(p, other)
+	if p.penetration > 0 then
+		p.penetration = p.penetration - 1
+		p.damage = p.damage * 0.8
+		return 0
+	end
+	return 1
 end
 
 function processGame(dt)
+	if gamestate ~= 1 then return end --Gamestate is not set to "running"
+
 	if player ~= nil then
-		local pdx, pdy = 0,0
-		if love.keyboard.isDown("d") then --right
-			pdx = (player.speed * dt)
-		end
-		if love.keyboard.isDown("a") then --left
-			pdx = -(player.speed * dt)
-		end
-		if love.keyboard.isDown("s") then --down 
-			pdy = (player.speed * dt)
-		end
-		if love.keyboard.isDown("w") then --up
-			pdy = -(player.speed * dt)
-		end
-		player:move(pdx,pdy)
+		player_process(player, dt)
 	end
 	process_zombies(zombie_director, dt)
 	for i,p in ipairs(projectiles) do
 		local p_x,p_y = p:center()
 		local dist = math.dist(p.ox, p.oy, p_x, p_y)
-		p.trailx = p.dx*(math.min(dist/300, 0.1))
-		p.traily = p.dy*(math.min(dist/300, 0.1))
+		p.trailx = p.dx*(math.min(dist/p.velocity, 0.1))
+		p.traily = p.dy*(math.min(dist/p.velocity, 0.1))
 		p:move(p.dx*dt, p.dy*dt)
+
+		p_x,p_y = p:center() --Update p_x and p_y because of p:move
+		if p_x < -200 or p_x > love.graphics.getWidth() + 200 or p_y < -200 or p_y > love.graphics.getHeight() + 200 then
+			table.remove(projectiles, i) -- remove bullet from actor list
+			HC.remove(p) -- remove bullet from HC
+		end
 	end
 	check_collisions()
 end
@@ -80,8 +124,10 @@ function check_collisions()
 			for other, dif in pairs(collisions) do
 				if z == other then
 					zombie_hurt(z, zombie_director, u, p.damage)
-					HC.remove(p) -- remove bullet from HC
-					table.remove(projectiles, i) -- remove bullet from actor list
+					if projectile_hit(p, other) == 1 then
+						table.remove(projectiles, i) -- remove bullet from actor list
+						HC.remove(p) -- remove bullet from HC
+					end
 				end
 			end
 		end
@@ -91,7 +137,7 @@ function check_collisions()
 		local candidates = HC.neighbors(z)
 		for other in pairs(candidates) do
 			local collides, dx, dy = z:collidesWith(other)
-			if collides then
+			if collides and other ~= nil and z ~= nil then
 				other:move(-dx*0.5, -dy*0.5)
 				z:move(dx*0.5, dy*0.5)
 			end
@@ -102,13 +148,6 @@ function check_collisions()
 				player_hurt(2)
 			end
 		end
-	end
-end
-
-function player_hurt(dmg)
-	player.health = player.health - dmg
-	if player.health <= 0 then
-		endGame()
 	end
 end
 
@@ -137,7 +176,9 @@ function drawGame()
 	love.graphics.setNewFont(24)
 	if player ~= nil then
 		love.graphics.print("HP: " .. player.health, 0, 0)
+		love.graphics.print("WEAPON: " .. player.weapons[player.currgun].name, 0, love.graphics.getHeight()-28)
 	end
-	love.graphics.print("TIMER: " .. math.floor(zombie_director.timer), love.graphics.getWidth()/2-58, 0)
-	love.graphics.print("WAVE: " .. zombie_director.wave, love.graphics.getWidth()-128, 0)
+	love.graphics.print("TIMER: " .. math.floor(zombie_director.timer), 130, 0)
+	love.graphics.print("|WAVE: " .. zombie_director.wave, love.graphics.getWidth()/2-64, 0)
+	love.graphics.print("|ZOMBIES: " .. #zombie_director, love.graphics.getWidth()/2+64, 0)
 end

@@ -7,19 +7,40 @@ function init_zombie_director()
 	z.zombie_per_second = 2 --Spawn a zombie every second
 	z.spawn_timer = 0 --timer itself
 	z.state = 0 --What state of director are we in? 0 = Grace Period, 1 = Active Wave
+	-- z.types = {
+	-- 	{
+	-- 		name = 'slow'
+	-- 		basehealth = 10
+	-- 		basespeed = 50
+	-- 		attack = 5
+	-- 		attackspeed = 1
+	-- 		color = {0, 125, 0, 255}
+	-- 		scale = 16
+	-- 		wave = 0
+	-- 		spawnchance = 1
+	-- 	}
+	-- 	{
+	-- 		name = 'fast'
+	-- 		basehealth = 3
+	-- 		basespeed = 125
+	-- 		attack = 2
+	-- 		attackspeed = 0.3
+	-- 		color = {125, 125, 0, 255}
+	-- 		scale = 14
+	-- 		wave = 4
+	-- 		spawnchance = 0.2
+	-- 	}
+	-- }
 	return z
 end
 
-function create_zombie(zombie_director, x, y, hp, speed, color)
-	if color == nil then
-		color = {0, 125, 0, 255}
-	end
-	local z = HC.circle(x, y, 16)
-	z.health = hp
-	z.speed = speed
+function create_zombie(zombie_director, type, x, y)
+	local z = HC.circle(x, y, type.scale)
+	z.health = type.basehealth
+	z.speed = type.basespeed
+	z.color = type.color
 	z.targ_x = x
 	z.targ_y = y
-	z.color = color
 	table.insert(zombie_director, z)
 	return z
 end
@@ -28,7 +49,7 @@ function process_zombies(zombie_director, dt)
 	zombie_director.timer = zombie_director.timer - dt
 	if zombie_director.timer <= 0 then
 		if zombie_director.state == 0 then
-			zombie_director.wave = zombie_director.wave + 1 --Increase wave
+			zombie_director.wave = zombie_director.wave + 10 --Increase wave
 			zombie_director.zombie_per_second = math.max(zombie_director.zombie_per_second * 0.8, 0.3) --Make it harder
 			zombie_director.state = 1
 			zombie_director.timer = zombie_director.wave_period
@@ -53,7 +74,7 @@ function process_zombies(zombie_director, dt)
 				local wave = zombie_director.wave
 				local hp = 5 * math.clamp(wave/5, 1, 10)
 				local speed = 50 * math.clamp(wave/5, 1, 10)
-				create_zombie(zombie_director, x, y, hp, speed)
+				create_zombie(zombie_director, {scale = 16, basespeed = speed, basehealth = hp, color = {0, 125, 0, 255}}, x, y)
 			end
 		end
 	end

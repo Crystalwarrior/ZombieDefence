@@ -2,7 +2,7 @@ require 'game'
 require 'lib/math'
 
 function love.load()
-	love.graphics.setBackgroundColor(50, 40, 40)
+	love.graphics.setBackgroundColor(40, 50, 40)
 	startGame()
 end
 
