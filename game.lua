@@ -177,6 +177,7 @@ function drawGame()
 	if player ~= nil then
 		love.graphics.print("HP: " .. player.health, 0, 0)
 		love.graphics.print("WEAPON: " .. player.weapons[player.currgun].name, 0, love.graphics.getHeight()-28)
+		love.graphics.print(player.curmag .. "/" .. player.weapons[player.currgun].mag, love.graphics.getWidth()-74, love.graphics.getHeight()-28)
 	end
 	love.graphics.print("TIMER: " .. math.floor(zombie_director.timer), 130, 0)
 	love.graphics.print("|WAVE: " .. zombie_director.wave, love.graphics.getWidth()/2-64, 0)
