@@ -49,7 +49,7 @@ function process_zombies(zombie_director, dt)
 	zombie_director.timer = zombie_director.timer - dt
 	if zombie_director.timer <= 0 then
 		if zombie_director.state == 0 then
-			zombie_director.wave = zombie_director.wave + 10 --Increase wave
+			zombie_director.wave = zombie_director.wave + 1 --Increase wave
 			zombie_director.zombie_per_second = math.max(zombie_director.zombie_per_second * 0.8, 0.3) --Make it harder
 			zombie_director.state = 1
 			zombie_director.timer = zombie_director.wave_period
