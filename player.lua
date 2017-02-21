@@ -3,7 +3,8 @@ function new_player()
 	player.health = 100
 	player.speed = 75
 	player.trigger = 0
-	player.nextfire = 0
+	player.gunTimer = 0
+	player.curmag = 0
 
 	--Weapons available
 	player.weapons = {
@@ -17,8 +18,8 @@ function new_player()
 			pellets = 1,
 			spread = 0.1,
 			smartspread = 0,
-			mag = 1,
-			reloadtime = 0,
+			mag = 12,
+			reloadtime = 0.5,
 			penetration = 0
 		},
 		{
@@ -31,8 +32,8 @@ function new_player()
 			pellets = 1,
 			spread = 0.2,
 			smartspread = 0,
-			mag = 1,
-			reloadtime = 0,
+			mag = 30,
+			reloadtime = 0.8,
 			penetration = 0
 		},
 		{
@@ -45,8 +46,8 @@ function new_player()
 			pellets = 6,
 			spread = 0.6,
 			smartspread = 1,
-			mag = 1,
-			reloadtime = 0,
+			mag = 6,
+			reloadtime = 1,
 			penetration = 0
 		},
 		{
@@ -59,8 +60,8 @@ function new_player()
 			pellets = 1,
 			spread = 0,
 			smartspread = 0,
-			mag = 1,
-			reloadtime = 0,
+			mag = 8,
+			reloadtime = 3,
 			penetration = 2 --every penetration is 80% of the current damage
 		}
 	}
@@ -93,16 +94,22 @@ function player_process(player, dt)
 	player:move(pdx,pdy)
 
 	--Firing code below
-	player.nextfire = math.max(player.nextfire - dt, 0)
+	player.gunTimer = math.max(player.gunTimer - dt, 0)
 	if player.weapons[player.currgun] ~= nil then
+		if player.curmag <= 0 then
+			player.curmag = player.weapons[player.currgun].mag
+			player.gunTimer = player.weapons[player.currgun].reloadtime
+			return
+		end
 		if player.trigger == 1 then
-			if player.nextfire > 0 then return end --Not ready to fire yet
+			if player.gunTimer > 0 then return end --Not ready to fire yet
 			if player.weapons[player.currgun].automatic == false and player.weapons[player.currgun].fired == true then return end --Only one shot for non-auto weps
 
 			local player_x,player_y = player:center()
 
 			player.weapons[player.currgun].fired = true
-			player.nextfire = player.nextfire + player.weapons[player.currgun].firerate
+			player.gunTimer = player.gunTimer + player.weapons[player.currgun].firerate
+			player.curmag = player.curmag - 1
 
 			local mouse_x, mouse_y = love.mouse.getX(), love.mouse.getY()
 			--create 'pellets'
@@ -135,13 +142,21 @@ function player_keytrigger(player, button, toggle)
 	if toggle == 1 then
 		if button == '1' then
 			player.currgun = 1
+			player.curmag = 0
 		elseif button == '2' then
 			player.currgun = 2
+			player.curmag = 0
 		elseif button == '3' then
 			player.currgun = 3
+			player.curmag = 0
 		elseif button == '4' then
 			player.currgun = 4
+			player.curmag = 0
 		end
+	end
+
+	if button == 'lctrl' then
+		player.trigger = toggle
 	end
 end
 

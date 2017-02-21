@@ -105,8 +105,12 @@ end
 function zombie_hurt(z, zombie_director, i, dmg)
 	z.health = z.health - dmg
 	if z.health <= 0 then
-		zombie_remove(z, zombie_director, i)
+		zombie_death(z, zombie_director, i)
 	end
+end
+
+function zombie_death(z, zombie_director, i)
+	zombie_remove(z, zombie_director, i)
 end
 
 function zombie_remove(z, zombie_director, i)
