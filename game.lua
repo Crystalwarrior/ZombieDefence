@@ -176,9 +176,29 @@ function drawGame()
 	love.graphics.setNewFont(24)
 	if player ~= nil then
 		love.graphics.print("HP: " .. player.health, 0, 0)
-		love.graphics.print("WEAPON: " .. player.weapons[player.currgun].name, 0, love.graphics.getHeight()-28)
-		love.graphics.print(player.curmag .. "/" .. player.weapons[player.currgun].mag, love.graphics.getWidth()-74, love.graphics.getHeight()-28)
+		love.graphics.print(">" .. player.weapons[player.currgun].name, 0, love.graphics.getHeight()-28)
+		love.graphics.printf(player.curmag .. "/" .. player.weapons[player.currgun].mag, love.graphics.getWidth()-250, love.graphics.getHeight()-28, 250, 'right')
+		love.graphics.printf("$" .. player.money, love.graphics.getWidth()/2-125, love.graphics.getHeight()-28, 250, 'center')
+
+		love.graphics.setColor(255,255,255,125)
+		local player_x,player_y = player:center()
+
+		local dist = math.dist(player_x, player_y, player_getAimX(), player_getAimY())
+		local angle = math.atan2((player_getAimY() - player_y), (player_getAimX() - player_x))
+
+		love.graphics.push()
+		love.graphics.translate(player_x, player_y)
+		love.graphics.rotate(angle)
+
+		love.graphics.line(0, 0, 20, 0)
+		love.graphics.line(dist + 20, 0, dist + 60, 0)
+		love.graphics.line(dist - 20, 0, dist - 60, 0)
+		love.graphics.line(dist, 20, dist, 60)
+		love.graphics.line(dist, -20, dist, -60)
+		
+		love.graphics.pop()
 	end
+	love.graphics.setColor(0, 200, 0, 255)
 	love.graphics.print("TIMER: " .. math.floor(zombie_director.timer), 130, 0)
 	love.graphics.print("|WAVE: " .. zombie_director.wave, love.graphics.getWidth()/2-64, 0)
 	love.graphics.print("|ZOMBIES: " .. #zombie_director, love.graphics.getWidth()/2+64, 0)

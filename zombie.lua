@@ -39,6 +39,7 @@ function create_zombie(zombie_director, type, x, y)
 	z.health = type.basehealth
 	z.speed = type.basespeed
 	z.color = type.color
+	z.type = type
 	z.targ_x = x
 	z.targ_y = y
 	table.insert(zombie_director, z)
@@ -110,6 +111,11 @@ function zombie_hurt(z, zombie_director, i, dmg)
 end
 
 function zombie_death(z, zombie_director, i)
+	local add = math.round(5 * (z.type.basehealth/5))
+	local player = get_player()
+	if player ~= nil then
+		player.money = player.money + add
+	end
 	zombie_remove(z, zombie_director, i)
 end
 

@@ -5,12 +5,14 @@ function new_player()
 	player.trigger = 0
 	player.gunTimer = 0
 	player.curmag = 0
-
+	player.money = 0
+	player.aimX = -(love.graphics.getWidth()/2)
+	player.aimY = -(love.graphics.getHeight()/2)
 	--Weapons available
 	player.weapons = {
 		{
 			name = 'pistol',
-			dmg = 5,
+			dmg = 4,
 			automatic = false,
 			fired = false,
 			velocity = 500,
@@ -19,7 +21,7 @@ function new_player()
 			spread = 0.1,
 			smartspread = 0,
 			mag = 12,
-			reloadtime = 0.5,
+			reloadtime = 0.8,
 			penetration = 0
 		},
 		{
@@ -33,7 +35,7 @@ function new_player()
 			spread = 0.2,
 			smartspread = 0,
 			mag = 30,
-			reloadtime = 0.8,
+			reloadtime = 1,
 			penetration = 0
 		},
 		{
@@ -47,7 +49,7 @@ function new_player()
 			spread = 0.6,
 			smartspread = 1,
 			mag = 6,
-			reloadtime = 1,
+			reloadtime = 2,
 			penetration = 0
 		},
 		{
@@ -96,6 +98,9 @@ function player_process(player, dt)
 	--Firing code below
 	player.gunTimer = math.max(player.gunTimer - dt, 0)
 	if player.weapons[player.currgun] ~= nil then
+		if love.keyboard.isDown("r") then
+			player.curmag = 0
+		end
 		if player.curmag <= 0 then
 			player.curmag = player.weapons[player.currgun].mag
 			player.gunTimer = player.weapons[player.currgun].reloadtime
@@ -111,7 +116,6 @@ function player_process(player, dt)
 			player.gunTimer = player.gunTimer + player.weapons[player.currgun].firerate
 			player.curmag = player.curmag - 1
 
-			local mouse_x, mouse_y = love.mouse.getX(), love.mouse.getY()
 			--create 'pellets'
 			local spread = player.weapons[player.currgun].spread
 			for i = 1, player.weapons[player.currgun].pellets do
@@ -122,7 +126,7 @@ function player_process(player, dt)
 					finalspread = (math.random() - 0.5) * spread
 				end
 				local p = init_projectile(player_x, player_y, player.weapons[player.currgun].dmg, player.weapons[player.currgun].velocity, player.weapons[player.currgun].penetration)
-				local angle = math.atan2((mouse_y - player_y), (mouse_x - player_x))
+				local angle = math.atan2((player_getAimY() - player_y), (player_getAimX() - player_x))
 
 				shoot_projectile(p, angle + finalspread)
 			end
@@ -130,6 +134,22 @@ function player_process(player, dt)
 			player.weapons[player.currgun].fired = false
 		end
 	end
+end
+
+function player_getAimX()
+	local player_x,player_y = player:center()
+	return player_x + player.aimX
+end
+
+function player_getAimY()
+	local player_x,player_y = player:center()
+	return player_y + player.aimY
+end
+
+function love.mousemoved( x, y, dx, dy, istouch )
+	local player_x,player_y = player:center()
+	player.aimX = player.aimX + dx
+	player.aimY = player.aimY + dy
 end
 
 function player_mousetrigger(player, button, toggle, x, y)
