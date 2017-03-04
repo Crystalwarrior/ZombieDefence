@@ -168,7 +168,7 @@ function drawGame()
 
 	-- for i,e in ipairs(particles) do
 	-- 	love.graphics.setColor(e.color[1], e.color[2], e.color[3], e.color[4])
-	-- 	love.graphics.circle('fill', e.x, e.y, e.radius)
+	-- 	love.graphics.mcircle('fill', e.x, e.y, e.radius)
 	-- end
 
 	--HUD
@@ -190,11 +190,14 @@ function drawGame()
 		love.graphics.translate(player_x, player_y)
 		love.graphics.rotate(angle)
 
+		local mult = math.max(1, (dist * 0.1) * player.weapons[player.currgun].spread)
+		local w = 2 * mult
+		local h = 4 * mult
 		love.graphics.line(0, 0, 20, 0)
-		love.graphics.line(dist + 20, 0, dist + 60, 0)
-		love.graphics.line(dist - 20, 0, dist - 60, 0)
-		love.graphics.line(dist, 20, dist, 60)
-		love.graphics.line(dist, -20, dist, -60)
+		love.graphics.line(dist + w, 0, dist + h, 0)
+		love.graphics.line(dist - w, 0, dist - h, 0)
+		love.graphics.line(dist, w, dist, h)
+		love.graphics.line(dist, -w, dist, -h)
 		
 		love.graphics.pop()
 	end
